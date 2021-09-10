@@ -9,8 +9,13 @@ import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombi
 
 import javax.sound.sampled.Line;
 import java.util.*;
-
 public class AcUtils {
+    public static HanyuPinyinOutputFormat format= new HanyuPinyinOutputFormat();
+        static {
+            format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
+            format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+            format.setVCharType(HanyuPinyinVCharType.WITH_V);
+        }
     static class AcNode
     {
         //孩子节点用HashMap存储，能够在O(1)的时间内查找到，效率高
@@ -32,19 +37,25 @@ public class AcUtils {
         AcNode cur=root;
         char[] chars=s.toCharArray();
         for (int i = 0; i < s.length(); i++) {
-            if (!cur.children.containsKey(String.valueOf(chars[i]))){ //如果不包含这个字符就创建孩子节点
-                cur.children.put(String.valueOf(chars[i]), new AcNode());
+            String subStr="";
+            if(chars[i]=='{'){
+                i=i+1;
+                while (chars[i]!='}'){
+                    subStr=subStr+chars[i];
+                    i++;
+                }
+            }else {
+                subStr=String.valueOf(chars[i]);
             }
-            cur = cur.children.get(String.valueOf(chars[i]));//temp指向孩子节点
+            if (!cur.children.containsKey(String.valueOf(chars[i]))){ //如果不包含这个字符就创建孩子节点
+                cur.children.put(subStr, new AcNode());
+            }
+            cur = cur.children.get(subStr);//temp指向孩子节点
         }
         cur.wordLengthList.add(s.length());//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
     }
     public static void creatKeyWords(AcNode root,List<String> list){
         List<String> keyWords = new ArrayList<>();
-        HanyuPinyinOutputFormat format= new HanyuPinyinOutputFormat();
-        format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
-        format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
-        format.setVCharType(HanyuPinyinVCharType.WITH_V);
         for(String keyWord:list){
             //如果是敏感词英文直接加入词库
             if(isEnglish(keyWord)){
@@ -135,10 +146,7 @@ public class AcUtils {
     }
     private static boolean isIllegal(char c){
        String str = "[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
-       if(str.contains(String.valueOf(c))){
-           return true;
-       }
-         else return false;
+        return str.contains(String.valueOf(c));
     }
     public static void query(AcNode root,String s,int line){
         AcNode temp = root;
@@ -150,6 +158,7 @@ public class AcUtils {
             }
             //如果这个字符在当前节点的孩子里面没有或者当前节点的fail指针不为空，就有可能通过fail指针找到这个字符
             //所以就一直向上更换temp节点
+
             while(temp.children.get(String.valueOf(c[i]))==null&&temp.failNode!=null){
                 temp=temp.failNode;
             }
@@ -193,6 +202,4 @@ public class AcUtils {
             System.out.println("line"+line+": "+"<"+ans1+">" +ans2);
         }
     }
-
-
 }
