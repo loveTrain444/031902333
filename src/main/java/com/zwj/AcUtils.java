@@ -1,5 +1,12 @@
 package com.zwj;
 
+import net.sourceforge.pinyin4j.PinyinHelper;
+import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
+import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
+import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
+import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
+import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
+
 import javax.sound.sampled.Line;
 import java.util.*;
 
@@ -7,7 +14,7 @@ public class AcUtils {
     static class AcNode
     {
         //孩子节点用HashMap存储，能够在O(1)的时间内查找到，效率高
-        Map<Character,AcNode> children=new HashMap<>();
+        Map<String,AcNode> children=new HashMap<>();
         AcNode failNode;
         //使用set集合存储字符长度，防止敏感字符重复导致集合内数据重复
         Set<Integer> wordLengthList = new HashSet<>();
@@ -15,28 +22,84 @@ public class AcUtils {
     public static AcNode getRoot(){
         return new AcNode();
     }
+    private static boolean isEnglish(String p) {
+        byte[] bytes = p.getBytes();
+        int i = bytes.length;//i为字节长度
+        int j = p.length();//j为字符长度
+        return i == j;
+    }
     public static void insert(AcNode root,String s){
         AcNode cur=root;
         char[] chars=s.toCharArray();
         for (int i = 0; i < s.length(); i++) {
-            if (!cur.children.containsKey(chars[i])){ //如果不包含这个字符就创建孩子节点
-                cur.children.put(chars[i], new AcNode());
+            if (!cur.children.containsKey(String.valueOf(chars[i]))){ //如果不包含这个字符就创建孩子节点
+                cur.children.put(String.valueOf(chars[i]), new AcNode());
             }
-            cur = cur.children.get(chars[i]);//temp指向孩子节点
+            cur = cur.children.get(String.valueOf(chars[i]));//temp指向孩子节点
         }
         cur.wordLengthList.add(s.length());//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
     }
     public static void creatKeyWords(AcNode root,List<String> list){
-        for(String keyWords:list){
-            insert(root,keyWords);
+        List<String> keyWords = new ArrayList<>();
+        HanyuPinyinOutputFormat format= new HanyuPinyinOutputFormat();
+        format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
+        format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+        format.setVCharType(HanyuPinyinVCharType.WITH_V);
+        for(String keyWord:list){
+            //如果是敏感词英文直接加入词库
+            if(isEnglish(keyWord)){
+                keyWords.add(keyWord);
+                continue;
+            }
+            String [][] matrix = new String[keyWord.length()][4];
+            //获取敏感词的扩展矩阵
+                for(int i=0;i<keyWord.length();i++){
+                    matrix[i][0] = String.valueOf(keyWord.charAt(i));
+                    String[] Spelling = new String[0];
+                    try {
+                        Spelling = PinyinHelper.toHanyuPinyinStringArray(keyWord.charAt(i),format);
+                    } catch (BadHanyuPinyinOutputFormatCombination badHanyuPinyinOutputFormatCombination) {
+                    badHanyuPinyinOutputFormatCombination.printStackTrace();
+                }
+                //如果不是汉字按原字符填充
+                if (Spelling==null){
+                    matrix[i][1] = String.valueOf(keyWord.charAt(i));
+                    matrix[i][2] = String.valueOf(keyWord.charAt(i));
+                    matrix[i][3] = String.valueOf(keyWord.charAt(i));
+                    continue;
+                }
+                matrix[i][1] = Spelling[0];
+                matrix[i][2] = "{"+Spelling[0]+"}";
+                matrix[i][3] = String.valueOf(Spelling[0].charAt(0));
+            }
+            //根据矩阵组合出所有敏感词
+            List<String> result = new ArrayList<>();
+            List<String> com = com(0, keyWord.length(), matrix, "", result);
+            keyWords.addAll(com);
+        }
+        //将敏感词库建成树
+        for(String keyword:keyWords){
+            insert(root,keyword);
         }
         buildFailPath(root);
     }
-    public static void buildFailPath(AcNode root){
+
+    private static List<String> com(int step,int len,String[][] matrix,String str,List<String> result){
+        if(step == len){
+            result.add(str);
+        }
+          else {
+              for (int k=0;k<4;k++){
+                  com(step+1,len,matrix,str+matrix[step][k],result);
+              }
+        }
+        return result;
+    }
+    private static void buildFailPath(AcNode root){
         //第一层的fail指针指向root,并且让第一层的节点入队，方便BFS
         Queue<AcNode> queue = new LinkedList<>();
-        Map<Character,AcNode> children = root.children;
-        for (Map.Entry<Character, AcNode> next : children.entrySet()) {
+        Map<String,AcNode> children = root.children;
+        for (Map.Entry<String, AcNode> next : children.entrySet()) {
             queue.offer(next.getValue());
             next.getValue().failNode = root;
         }
@@ -44,9 +107,9 @@ public class AcUtils {
         while(!queue.isEmpty()){
             AcNode x=queue.poll();
             children=x.children; //取出当前节点的所有孩子
-            Iterator<Map.Entry<Character, AcNode>> iterator = children.entrySet().iterator();
+            Iterator<Map.Entry<String, AcNode>> iterator = children.entrySet().iterator();
             while(iterator.hasNext()){
-                Map.Entry<Character, AcNode> next = (Map.Entry<Character, AcNode>) iterator.next();
+                Map.Entry<String, AcNode> next = (Map.Entry<String, AcNode>) iterator.next();
                 AcNode y=next.getValue();  //得到当前某个孩子节点
                 AcNode faFail=x.failNode;  //得到孩子节点的父节点的fail节点
                 //如果 faFail节点没有与 当前节点父节点具有相同的转移路径，则继续获取 fafail 节点的失败指针指向的节点，将其赋值给 fafail
@@ -70,7 +133,7 @@ public class AcUtils {
         }
 
     }
-    public static boolean isIllegal(char c){
+    private static boolean isIllegal(char c){
        String str = "[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
        if(str.contains(String.valueOf(c))){
            return true;
@@ -81,17 +144,18 @@ public class AcUtils {
         AcNode temp = root;
         char[] c=s.toCharArray();
         for (int i = 0; i < s.length(); i++) {
-            //如果这个字符在当前节点的孩子里面没有或者当前节点的fail指针不为空，就有可能通过fail指针找到这个字符
-            //所以就一直向上更换temp节点
+
             if (isIllegal(c[i])){
                 continue;
             }
-            while(temp.children.get(c[i])==null&&temp.failNode!=null){
+            //如果这个字符在当前节点的孩子里面没有或者当前节点的fail指针不为空，就有可能通过fail指针找到这个字符
+            //所以就一直向上更换temp节点
+            while(temp.children.get(String.valueOf(c[i]))==null&&temp.failNode!=null){
                 temp=temp.failNode;
             }
             //如果因为当前节点的孩子节点有这个字符，则将temp替换为下面的孩子节点
-            if (temp.children.get(c[i])!=null){
-                temp=temp.children.get(c[i]);
+            if (temp.children.get(String.valueOf(c[i]))!=null){
+                temp=temp.children.get(String.valueOf(c[i]));
             }
             //如果temp的failnode为空，代表temp为root节点，没有在树中找到符合的敏感字，故跳出循环，检索下个字符
             else{
@@ -105,27 +169,28 @@ public class AcUtils {
     }
 
     //利用节点存储的字符长度信息，打印输出敏感词及其在搜索串内的坐标
-    public static void handleMatchWords(AcNode node, String text, int currentPos,int line)
+    private static void handleMatchWords(AcNode node, String text, int currentPos,int line)
     {
         for (Integer wordLen : node.wordLengthList)
         {
-           /* int startIndex = currentPos - wordLen + 1;
-            String matchWord = text.substring(startIndex, currentPos + 1);*/
-            StringBuilder ans = new StringBuilder();
+            StringBuilder ans1 = new StringBuilder();
+            StringBuilder ans2 = new StringBuilder();
             int pos = currentPos;
             int cnt = wordLen;
             while(cnt>0){
                 if(!isIllegal(text.charAt(pos))){
-                    ans.append(text.charAt(pos));
+                    ans1.append(text.charAt(pos));
+                    ans2.append(text.charAt(pos));
                     cnt--;
                 }
                    else{
-                       ans.append(text.charAt(pos));
+                       ans2.append(text.charAt(pos));
                 }
                    pos--;
             }
-            ans.reverse();
-            System.out.println("line"+line+" ："+ans);
+            ans2.reverse();
+            ans1.reverse();
+            System.out.println("line"+line+": "+"<"+ans1+">" +ans2);
         }
     }
 
