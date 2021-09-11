@@ -24,15 +24,18 @@ public class AcUtils {
         //使用set集合存储字符长度，防止敏感字符重复导致集合内数据重复
         Set<Integer> wordLengthList = new HashSet<>();
     }
+    //获取根节点
     public static AcNode getRoot(){
         return new AcNode();
     }
+    //判断字符串内是否含有中文，原理是中文占俩个字节，英文和其他字符占一个
     private static boolean isNotContainChinese(String p) {
         byte[] bytes = p.getBytes();
         int i = bytes.length;//i为字节长度
         int j = p.length();//j为字符长度
         return i == j;
     }
+    //插入节点
     public static void insert(AcNode root,String s){
         AcNode cur=root;
         int len=0;
@@ -146,7 +149,7 @@ public class AcUtils {
 
     }
     private static boolean isIllegal(char c){
-       String str = "[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
+       String str = "[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+| {}【】‘；：”“’。，、？_]";
         return str.contains(String.valueOf(c));
     }
     public static void query(AcNode root,String s,int line){
@@ -157,10 +160,15 @@ public class AcUtils {
                 continue;
             }
             try {
+                //spelling如果是null说明该字符不是汉字
                 String[] spelling = PinyinHelper.toHanyuPinyinStringArray(s.charAt(i), format);
                 String str = String.valueOf(s.charAt(i));
+                //如果是汉字转换为拼音，方便之后查询谐音字
                 if(spelling!=null){
                     str = spelling[0];
+                }else{
+                    //如果是英文字符转换成小写统一查询
+                    str = str.toLowerCase();
                 }
                 //如果这个字符在当前节点的孩子里面没有或者当前节点的fail指针不为空，就有可能通过fail指针找到这个字符
                 //所以就一直向上更换temp节点
