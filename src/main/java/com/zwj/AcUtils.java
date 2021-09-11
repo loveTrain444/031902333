@@ -27,7 +27,7 @@ public class AcUtils {
     public static AcNode getRoot(){
         return new AcNode();
     }
-    private static boolean isEnglish(String p) {
+    private static boolean isNotContainChinese(String p) {
         byte[] bytes = p.getBytes();
         int i = bytes.length;//i为字节长度
         int j = p.length();//j为字符长度
@@ -35,30 +35,31 @@ public class AcUtils {
     }
     public static void insert(AcNode root,String s){
         AcNode cur=root;
-        char[] chars=s.toCharArray();
+        int len=0;
         for (int i = 0; i < s.length(); i++) {
             String subStr="";
-            if(chars[i]=='{'){
+            if(s.charAt(i)=='{'){
                 i=i+1;
-                while (chars[i]!='}'){
-                    subStr=subStr+chars[i];
+                while (s.charAt(i)!='}'){
+                    subStr=subStr+s.charAt(i);
                     i++;
                 }
             }else {
-                subStr=String.valueOf(chars[i]);
+                subStr=String.valueOf(s.charAt(i));
             }
-            if (!cur.children.containsKey(String.valueOf(chars[i]))){ //如果不包含这个字符就创建孩子节点
+            if (!cur.children.containsKey(subStr)){ //如果不包含这个字符就创建孩子节点
                 cur.children.put(subStr, new AcNode());
             }
             cur = cur.children.get(subStr);//temp指向孩子节点
+            len++;
         }
-        cur.wordLengthList.add(s.length());//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
+        cur.wordLengthList.add(len);//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
     }
-    public static void creatKeyWords(AcNode root,List<String> list){
+    public static void creatKeyWords(AcNode root, List<String> list){
         List<String> keyWords = new ArrayList<>();
         for(String keyWord:list){
             //如果是敏感词英文直接加入词库
-            if(isEnglish(keyWord)){
+            if(isNotContainChinese(keyWord)){
                 keyWords.add(keyWord);
                 continue;
             }
@@ -150,29 +151,36 @@ public class AcUtils {
     }
     public static void query(AcNode root,String s,int line){
         AcNode temp = root;
-        char[] c=s.toCharArray();
         for (int i = 0; i < s.length(); i++) {
-
-            if (isIllegal(c[i])){
+            //如果是非法字符直接跳过
+            if (isIllegal(s.charAt(i))){
                 continue;
             }
-            //如果这个字符在当前节点的孩子里面没有或者当前节点的fail指针不为空，就有可能通过fail指针找到这个字符
-            //所以就一直向上更换temp节点
-            String str = String.valueOf(c[i]);
-            while(temp.children.get(str)==null&&temp.failNode!=null){
+            try {
+                String[] spelling = PinyinHelper.toHanyuPinyinStringArray(s.charAt(i), format);
+                String str = String.valueOf(s.charAt(i));
+                if(spelling!=null){
+                    str = spelling[0];
+                }
+                //如果这个字符在当前节点的孩子里面没有或者当前节点的fail指针不为空，就有可能通过fail指针找到这个字符
+                //所以就一直向上更换temp节点
+                while(temp.children.get(str)==null&&temp.failNode!=null){
                 temp=temp.failNode;
-            }
-            //如果因为当前节点的孩子节点有这个字符，则将temp替换为下面的孩子节点
-            if (temp.children.get(str)!=null){
+                }
+                //如果因为当前节点的孩子节点有这个字符，则将temp替换为下面的孩子节点
+                 if (temp.children.get(str)!=null){
                 temp=temp.children.get(str);
-            }
-            //如果temp的failnode为空，代表temp为root节点，没有在树中找到符合的敏感字，故跳出循环，检索下个字符
-            else{
-                continue;
-            }
-            //如果检索到当前节点的长度信息存在，则代表搜索到了敏感词，打印输出即可
-            if (temp.wordLengthList.size()!=0){
-                handleMatchWords(temp,s,i, line);
+                 }
+                //如果temp的failnode为空，代表temp为root节点，没有在树中找到符合的敏感字，故跳出循环，检索下个字符
+                else{
+                    continue;
+                }
+                //如果检索到当前节点的长度信息存在，则代表搜索到了敏感词，打印输出即可
+                 if (temp.wordLengthList.size()!=0){
+                    handleMatchWords(temp,s,i,line);
+                }
+            } catch (BadHanyuPinyinOutputFormatCombination badHanyuPinyinOutputFormatCombination) {
+                badHanyuPinyinOutputFormatCombination.printStackTrace();
             }
         }
     }
