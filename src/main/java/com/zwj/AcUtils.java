@@ -6,18 +6,18 @@ import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
 import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
-
 import java.util.*;
-
+//使用AC自动机算法
 public class AcUtils {
+    public static String illegalString = "[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+| {}【】‘；：”“’。，、？_]";
     public static HanyuPinyinOutputFormat format= new HanyuPinyinOutputFormat();
+    public static Map<String,String> dictionaryOfKeyword = new HashMap<>();
     static {
         format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
         format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
         format.setVCharType(HanyuPinyinVCharType.WITH_V);
     }
-    static class AcNode
-    {
+    public static class AcNode {
         //孩子节点用HashMap存储，能够在O(1)的时间内查找到，效率高
         Map<String,AcNode> children=new HashMap<>();
         AcNode failNode;
@@ -40,20 +40,21 @@ public class AcUtils {
         AcNode cur=root;
         int len=0;
         for (int i = 0; i < s.length(); i++) {
-            String subStr="";
+            StringBuilder subStr= new StringBuilder();
             if(s.charAt(i)=='{'){
                 i=i+1;
                 while (s.charAt(i)!='}'){
-                    subStr=subStr+s.charAt(i);
+                    subStr.append(s.charAt(i));
                     i++;
                 }
             }else {
-                subStr=String.valueOf(s.charAt(i));
+                subStr = new StringBuilder(String.valueOf(s.charAt(i)));
             }
-            if (!cur.children.containsKey(subStr)){ //如果不包含这个字符就创建孩子节点
-                cur.children.put(subStr, new AcNode());
+            String sub = subStr.toString();
+            if (!cur.children.containsKey(sub)){ //如果不包含这个字符就创建孩子节点
+                cur.children.put(sub, new AcNode());
             }
-            cur = cur.children.get(subStr);//temp指向孩子节点
+            cur = cur.children.get(sub.toString());//temp指向孩子节点
             len++;
         }
         cur.wordLengthList.add(len);//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
@@ -101,6 +102,11 @@ public class AcUtils {
 
     private static List<String> com(int step,int len,String[][] matrix,String str,List<String> result){
         if(step == len){
+            StringBuilder keyword = new StringBuilder();
+            for(int i=0;i<len;i++){
+                keyword.append(matrix[i][0]);
+            }
+            dictionaryOfKeyword.put(str, keyword.toString());
             result.add(str);
         }
           else {
@@ -149,7 +155,7 @@ public class AcUtils {
 
     }
     private static boolean isIllegal(char c){
-       String str = "[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+| {}【】‘；：”“’。，、？_]";
+       String str = illegalString;
         return str.contains(String.valueOf(c));
     }
     public static void query(AcNode root,String s,int line){
@@ -218,6 +224,4 @@ public class AcUtils {
             System.out.println("line"+line+": "+"<"+ans1+">" +ans2);
         }
     }
-
-
 }
