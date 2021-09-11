@@ -22,7 +22,7 @@ public class AcUtils {
         Map<String,AcNode> children=new HashMap<>();
         AcNode failNode;
         //使用set集合存储字符长度，防止敏感字符重复导致集合内数据重复
-        Set<Integer> wordLengthList = new HashSet<>();
+        int wordLength = 0;
     }
     //获取根节点
     public static AcNode getRoot(){
@@ -59,8 +59,7 @@ public class AcUtils {
             cur = cur.children.get(sub.toString());//temp指向孩子节点
             len++;
         }
-        if(cur.children.isEmpty())
-        cur.wordLengthList.add(len);//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
+        cur.wordLength = len;//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
     }
     public static void creatKeyWords(AcNode root, List<String> list){
         List<String> keyWords = new ArrayList<>();
@@ -142,10 +141,10 @@ public class AcUtils {
                     //fafail节点有与当前节点父节点具有相同的转移路径，则把当前孩子节点的fail指向fafail节点的孩子节点
                     y.failNode=faFail.children.get(next.getKey());
                 }
-                //如果当前节点的fail节点有保存字符串的长度信息，则把信息存储合并到当前节点
-                if (y.failNode.wordLengthList!=null){
+                /* 如果当前节点的fail节点有保存字符串的长度信息，则把信息存储合并到当前节点
+                  if (y.failNode.wordLengthList!=null){
                     y.wordLengthList.addAll(y.failNode.wordLengthList);
-                }
+                }*/
                 queue.offer(y);//最后别忘了把当前孩子节点入队
             }
         }
@@ -155,8 +154,10 @@ public class AcUtils {
        String str = illegalString;
         return str.contains(String.valueOf(c));
     }
-    public static void query(AcNode root,String s,int line){
+    public static ArrayList<String> query(AcNode root, String s, int line){
+        ArrayList<String> resultSet = new ArrayList<>();
         AcNode temp = root;
+        int tmp=-1;
         for (int i = 0; i < s.length(); i++) {
             //如果是非法字符直接跳过
             if (isIllegal(s.charAt(i))){
@@ -187,24 +188,27 @@ public class AcUtils {
                     continue;
                 }
                 //如果检索到当前节点的长度信息存在，则代表搜索到了敏感词，打印输出即可
-                 if (temp.wordLengthList.size()!=0){
-                    handleMatchWords(temp,s,i,line);
+                 if (temp.wordLength!=0){
+                    int startIndex=handleMatchWords(temp,s,i,line,resultSet);
+                    if(startIndex==tmp){
+                        resultSet.remove(resultSet.size()-2);
+                    }
+                    tmp=startIndex;
                 }
             } catch (BadHanyuPinyinOutputFormatCombination badHanyuPinyinOutputFormatCombination) {
                 badHanyuPinyinOutputFormatCombination.printStackTrace();
             }
         }
+        return resultSet;
     }
 
     //利用节点存储的字符长度信息，打印输出敏感词及其在搜索串内的坐标
-    private static void handleMatchWords(AcNode node, String text, int currentPos,int line)
-    {
-        for (Integer wordLen : node.wordLengthList)
-        {
+    private static int handleMatchWords(AcNode node, String text, int currentPos, int line, ArrayList<String> resultSet) {
+            int startIndex;
             StringBuilder ans1 = new StringBuilder();
             StringBuilder ans2 = new StringBuilder();
             int pos = currentPos;
-            int cnt = wordLen;
+            int cnt = node.wordLength;
             while(cnt>0){
                 if(!isIllegal(text.charAt(pos))){
                     ans1.append(text.charAt(pos));
@@ -216,6 +220,7 @@ public class AcUtils {
                 }
                    pos--;
             }
+            startIndex=pos+1;
             ans2.reverse();
             ans1.reverse();
             String newAns;
@@ -231,8 +236,9 @@ public class AcUtils {
                     }
                 }
                 newAns = dictionaryOfKeyword.get(ans1.toString().toLowerCase());
+            resultSet.add("line"+line+": "+"<"+newAns+">" +ans2);
+            return startIndex;
+      }
 
-            System.out.println("line"+line+": "+"<"+newAns+">" +ans2);
-        }
     }
-}
+
