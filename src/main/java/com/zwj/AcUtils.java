@@ -40,23 +40,27 @@ public class AcUtils {
         AcNode cur=root;
         int len=0;
         for (int i = 0; i < s.length(); i++) {
-            StringBuilder subStr= new StringBuilder();
+            String sub= "";
+            //将拼音转化成整个字符串装入node
             if(s.charAt(i)=='{'){
+                StringBuilder subStr= new StringBuilder();
                 i=i+1;
                 while (s.charAt(i)!='}'){
                     subStr.append(s.charAt(i));
                     i++;
                 }
+                sub = subStr.toString();
             }else {
-                subStr = new StringBuilder(String.valueOf(s.charAt(i)));
+                sub = String.valueOf(s.charAt(i));
             }
-            String sub = subStr.toString();
             if (!cur.children.containsKey(sub)){ //如果不包含这个字符就创建孩子节点
                 cur.children.put(sub, new AcNode());
             }
+            cur.wordLengthList.clear();
             cur = cur.children.get(sub.toString());//temp指向孩子节点
             len++;
         }
+        if(cur.children.isEmpty())
         cur.wordLengthList.add(len);//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
     }
     public static void creatKeyWords(AcNode root, List<String> list){
@@ -65,6 +69,7 @@ public class AcUtils {
             //如果是敏感词英文直接加入词库
             if(isNotContainChinese(keyWord)){
                 keyWords.add(keyWord);
+                dictionaryOfKeyword.put(keyWord,keyWord);
                 continue;
             }
             String [][] matrix = new String[keyWord.length()][4];
@@ -76,13 +81,6 @@ public class AcUtils {
                         Spelling = PinyinHelper.toHanyuPinyinStringArray(keyWord.charAt(i),format);
                     } catch (BadHanyuPinyinOutputFormatCombination badHanyuPinyinOutputFormatCombination) {
                     badHanyuPinyinOutputFormatCombination.printStackTrace();
-                }
-                //如果不是汉字按原字符填充
-                if (Spelling==null){
-                    matrix[i][1] = String.valueOf(keyWord.charAt(i));
-                    matrix[i][2] = String.valueOf(keyWord.charAt(i));
-                    matrix[i][3] = String.valueOf(keyWord.charAt(i));
-                    continue;
                 }
                 matrix[i][1] = Spelling[0];
                 matrix[i][2] = "{"+Spelling[0]+"}";
@@ -221,7 +219,21 @@ public class AcUtils {
             }
             ans2.reverse();
             ans1.reverse();
-            System.out.println("line"+line+": "+"<"+ans1+">" +ans2);
+            String newAns;
+                for(int i=0;i<ans1.length();i++) {
+                    try {
+                        String[] sp = PinyinHelper.toHanyuPinyinStringArray(ans1.charAt(i), format);
+                        //是汉字
+                        if (sp != null) {
+                            ans1.replace(i, i + 1, sp[0]);
+                        }
+                    } catch (BadHanyuPinyinOutputFormatCombination badHanyuPinyinOutputFormatCombination) {
+                        badHanyuPinyinOutputFormatCombination.printStackTrace();
+                    }
+                }
+                newAns = dictionaryOfKeyword.get(ans1.toString().toLowerCase());
+
+            System.out.println("line"+line+": "+"<"+newAns+">" +ans2);
         }
     }
 }
