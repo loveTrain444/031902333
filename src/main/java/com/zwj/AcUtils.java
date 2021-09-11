@@ -56,7 +56,6 @@ public class AcUtils {
             if (!cur.children.containsKey(sub)){ //如果不包含这个字符就创建孩子节点
                 cur.children.put(sub, new AcNode());
             }
-            cur.wordLengthList.clear();
             cur = cur.children.get(sub.toString());//temp指向孩子节点
             len++;
         }
