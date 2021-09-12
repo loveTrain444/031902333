@@ -1,4 +1,4 @@
-total: 492
+total: 498
 line2: <邪教>邪教
 line3: <法轮功>法lun功
 line8: <fuck>Fuck
@@ -244,10 +244,16 @@ line252: <法轮功>法伦功
 line253: <法轮功>FaLG
 line253: <fuck>f                 uck
 line253: <fuck>f                 uck
+line254: <fuck>f435678u4567c!*&^%$#k
 line254: <法轮功>FaLG
+line255: <fuck>f435678u4567c!*&^%$#k
 line255: <法轮功>FaLG
 line256: <法轮功>FaLG
+line256: <fuck>f435678u4567c!*&^%$#k
 line257: <法轮功>FaLG
+line257: <fuck>f435678u4567c!*&^%$#k
+line262: <fuck>f435678u4567c!*&^%$#k
+line262: <fuck>f435678u4567c!*&^%$#k
 line263: <法轮功>FaLG
 line263: <fuck>f！@#￥%…………&**uck
 line264: <法轮功>FaLG

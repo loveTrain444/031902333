@@ -9,13 +9,14 @@ import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombi
 import java.util.*;
 //使用AC自动机算法
 public class AcUtils {
-    public static String illegalString = "[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+| {}【】‘；：”“’。，、？_]";
+    public static String illegalString = "0123456789[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+| {}【】‘；：”“’。，、？_]";
     public static HanyuPinyinOutputFormat format= new HanyuPinyinOutputFormat();
     public static Map<String,String> dictionaryOfKeyword = new HashMap<>();
     static {
         format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
         format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
         format.setVCharType(HanyuPinyinVCharType.WITH_V);
+
     }
     public static class AcNode {
         //孩子节点用HashMap存储，能够在O(1)的时间内查找到，效率高
