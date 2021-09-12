@@ -155,17 +155,17 @@ public class AcUtils {
             children=x.children; //取出当前节点的所有孩子
             for (Map.Entry<String, AcNode> next : children.entrySet()) {
                 AcNode y = next.getValue();  //得到当前某个孩子节点
-                AcNode faFail = x.failNode;  //得到孩子节点的父节点的fail节点
-                //如果 faFail节点没有与 当前节点父节点具有相同的转移路径，则继续获取 fafail 节点的失败指针指向的节点，将其赋值给 fafail
-                while (faFail != null && (!faFail.children.containsKey(next.getKey()))) {
-                    faFail = faFail.failNode;
+                AcNode failOfParent = x.failNode;  //得到孩子节点的父节点的fail节点
+                //如果 failOfParent节点没有与 当前节点父节点具有相同的转移路径，则继续获取 failOfParent 节点的失败指针指向的节点，将其赋值给 failOfParent
+                while (failOfParent != null && (!failOfParent.children.containsKey(next.getKey()))) {
+                    failOfParent = failOfParent.failNode;
                 }
                 //回溯到了root节点，只有root节点的fail才为null
-                if (faFail == null) {
+                if (failOfParent == null) {
                     y.failNode = root;
                 } else {
-                    //fafail节点有与当前节点父节点具有相同的转移路径，则把当前孩子节点的fail指向fafail节点的孩子节点
-                    y.failNode = faFail.children.get(next.getKey());
+                    //failOfParent节点有与当前节点父节点具有相同的转移路径，则把当前孩子节点的fail指向failOfParent节点的孩子节点
+                    y.failNode = failOfParent.children.get(next.getKey());
                 }
                 /* 如果当前节点的fail节点有保存字符串的长度信息，则把信息存储合并到当前节点
                   if (y.failNode.wordLengthList!=null){
@@ -200,7 +200,7 @@ public class AcUtils {
                         }
                         String sub = s.substring(i, i + entry.getKey().length());
                         if (entry.getKey().equals(sub)) {
-                            resultSet.add("line" + line + ": " + "<" + dictionaryOfKeyword.get(entry.getKey()) + "> " + entry.getKey());
+                            resultSet.add("Line" + line + ": " + "<" + dictionaryOfKeyword.get(entry.getKey()) + "> " + entry.getKey());
                             i += entry.getKey().length();
                             break;
                         }
@@ -224,7 +224,7 @@ public class AcUtils {
                  if (temp.children.get(str)!=null){
                 temp=temp.children.get(str);
                  }
-                //如果temp的failnode为空，代表temp为root节点，没有在树中找到符合的敏感字，故跳出循环，检索下个字符
+                //如果temp的failOfParent为空，代表temp为root节点，没有在树中找到符合的敏感字，故跳出循环，检索下个字符
                 else{
                     continue;
                 }
