@@ -6,18 +6,38 @@ import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
 import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
+import org.apache.commons.io.FileUtils;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 //使用AC自动机算法
 public class AcUtils {
     public static String illegalString = "0123456789[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+| {}【】‘；：”“’。，、？_]";
     public static HanyuPinyinOutputFormat format= new HanyuPinyinOutputFormat();
+    //查找原词的字典
     public static Map<String,String> dictionaryOfKeyword = new HashMap<>();
+    //查找部首拆分的字典
+    public static Map<Character,String> dictionaryOfBreak = new HashMap<>();
     static {
         format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
         format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
         format.setVCharType(HanyuPinyinVCharType.WITH_V);
-
+        try {
+            List<String> breakList = FileUtils.readLines(new File("D:\\java_code\\031902333\\031902333\\src\\main\\resources\\拆分词库.txt"), "UTF-8");
+            for(String str:breakList){
+                char word = str.charAt(3);
+                int i=8;
+                while(str.charAt(i)!='\"'){
+                    i++;
+                }
+                String breakUP = str.substring(8,i);
+                dictionaryOfBreak.put(word,breakUP);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
     public static class AcNode {
         //孩子节点用HashMap存储，能够在O(1)的时间内查找到，效率高
         Map<String,AcNode> children=new HashMap<>();
@@ -41,7 +61,7 @@ public class AcUtils {
         AcNode cur=root;
         int len=0;
         for (int i = 0; i < s.length(); i++) {
-            String sub= "";
+            String sub;
             //将拼音转化成整个字符串装入node
             if(s.charAt(i)=='{'){
                 StringBuilder subStr= new StringBuilder();
@@ -57,7 +77,7 @@ public class AcUtils {
             if (!cur.children.containsKey(sub)){ //如果不包含这个字符就创建孩子节点
                 cur.children.put(sub, new AcNode());
             }
-            cur = cur.children.get(sub.toString());//temp指向孩子节点
+            cur = cur.children.get(sub);//temp指向孩子节点
             len++;
         }
         cur.wordLength = len;//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
@@ -89,6 +109,14 @@ public class AcUtils {
             List<String> result = new ArrayList<>();
             List<String> com = com(0, keyWord.length(), matrix, "", result);
             keyWords.addAll(com);
+            //构建拆分词库
+            for (String str:list){
+                StringBuilder br = new StringBuilder();
+                for(int i=0;i<str.length();i++){
+                    br.append(dictionaryOfBreak.get(str.charAt(i)));
+                }
+                dictionaryOfKeyword.put(br.toString(),str);
+            }
         }
         //将敏感词库建成树
         for(String keyword:keyWords){
@@ -107,7 +135,7 @@ public class AcUtils {
             result.add(str);
         }
           else {
-              for (int k=0;k<4;k++){
+              for (int k=1;k<4;k++){
                   com(step+1,len,matrix,str+matrix[step][k],result);
               }
         }
@@ -125,22 +153,19 @@ public class AcUtils {
         while(!queue.isEmpty()){
             AcNode x=queue.poll();
             children=x.children; //取出当前节点的所有孩子
-            Iterator<Map.Entry<String, AcNode>> iterator = children.entrySet().iterator();
-            while(iterator.hasNext()){
-                Map.Entry<String, AcNode> next = (Map.Entry<String, AcNode>) iterator.next();
-                AcNode y=next.getValue();  //得到当前某个孩子节点
-                AcNode faFail=x.failNode;  //得到孩子节点的父节点的fail节点
+            for (Map.Entry<String, AcNode> next : children.entrySet()) {
+                AcNode y = next.getValue();  //得到当前某个孩子节点
+                AcNode faFail = x.failNode;  //得到孩子节点的父节点的fail节点
                 //如果 faFail节点没有与 当前节点父节点具有相同的转移路径，则继续获取 fafail 节点的失败指针指向的节点，将其赋值给 fafail
-                while(faFail!=null&&(!faFail.children.containsKey(next.getKey()))){
-                    faFail=faFail.failNode;
+                while (faFail != null && (!faFail.children.containsKey(next.getKey()))) {
+                    faFail = faFail.failNode;
                 }
                 //回溯到了root节点，只有root节点的fail才为null
-                if (faFail==null){
-                    y.failNode=root;
-                }
-                else {
+                if (faFail == null) {
+                    y.failNode = root;
+                } else {
                     //fafail节点有与当前节点父节点具有相同的转移路径，则把当前孩子节点的fail指向fafail节点的孩子节点
-                    y.failNode=faFail.children.get(next.getKey());
+                    y.failNode = faFail.children.get(next.getKey());
                 }
                 /* 如果当前节点的fail节点有保存字符串的长度信息，则把信息存储合并到当前节点
                   if (y.failNode.wordLengthList!=null){
@@ -166,6 +191,21 @@ public class AcUtils {
             }
             try {
                 //spelling如果是null说明该字符不是汉字
+                String[] sp = PinyinHelper.toHanyuPinyinStringArray(s.charAt(i), format);
+                //先查拆分库，若查出直接加入结果集
+                if(sp!=null) {
+                    for (Map.Entry<String, String> entry : dictionaryOfKeyword.entrySet()) {
+                        if (i + entry.getKey().length() > s.length()) {
+                            continue;
+                        }
+                        String sub = s.substring(i, i + entry.getKey().length());
+                        if (entry.getKey().equals(sub)) {
+                            resultSet.add("line" + line + ": " + "<" + dictionaryOfKeyword.get(entry.getKey()) + "> " + entry.getKey());
+                            i += entry.getKey().length();
+                            break;
+                        }
+                    }
+                }
                 String[] spelling = PinyinHelper.toHanyuPinyinStringArray(s.charAt(i), format);
                 String str = String.valueOf(s.charAt(i));
                 //如果是汉字转换为拼音，方便之后查询谐音字
@@ -237,9 +277,8 @@ public class AcUtils {
                     }
                 }
                 newAns = dictionaryOfKeyword.get(ans1.toString().toLowerCase());
-            resultSet.add("line"+line+": "+"<"+newAns+">" +ans2);
+            resultSet.add("Line"+line+": "+"<"+newAns+"> " +ans2);
             return startIndex;
       }
-
     }
 

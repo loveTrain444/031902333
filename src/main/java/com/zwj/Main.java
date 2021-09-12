@@ -13,6 +13,9 @@ public class Main {
             String words = args[0];
             String org = args[1];
             String ans = args[2];
+            /*String words = "D:\\java_code\\031902333\\031902333\\src\\main\\resources\\words.txt";
+            String org = "D:\\java_code\\031902333\\031902333\\src\\main\\resources\\org.txt";
+            String ans = "D:\\java_code\\031902333\\031902333\\src\\main\\resources\\ans.txt";*/
             List<String> textList = FileUtils.readLines(new File(org), "UTF-8");
             List<String> keyWordsList = FileUtils.readLines(new File(words), "UTF-8");
             AcUtils.AcNode root = AcUtils.getRoot();
