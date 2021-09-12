@@ -3,3 +3,7 @@ version = 1
 [[analyzers]]
 name = "java"
 enabled = true
+
+  [analyzers.meta]
+  import_root = "github.com/loveTrain444/031902333.git"
+  dependencies_vendored = false
