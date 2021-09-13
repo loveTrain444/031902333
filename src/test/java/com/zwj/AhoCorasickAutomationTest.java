@@ -20,9 +20,9 @@ public class AhoCorasickAutomationTest {
       format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
       format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
       format.setVCharType(HanyuPinyinVCharType.WITH_V);
-      String[] sp1 = PinyinHelper.toHanyuPinyinStringArray('邪',format);
+      String[] sp1 = PinyinHelper.toHanyuPinyinStringArray('氵',format);
       String[] sp2 = PinyinHelper.toHanyuPinyinStringArray('法',format);
-    System.out.println(sp1[0]);
+    System.out.println("我超".toLowerCase(Locale.ROOT));
   }
 }
 
