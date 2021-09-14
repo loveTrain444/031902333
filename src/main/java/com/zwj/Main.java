@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 public class Main {
     public static void main(String[] args) {
-        ArrayList<String> resultList;
+         ArrayList<String> resultList;
          String words = args[0];
          String org = args[1];
          String ans = args[2];

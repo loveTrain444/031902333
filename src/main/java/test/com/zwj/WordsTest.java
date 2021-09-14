@@ -1,14 +1,16 @@
 package test.com.zwj;
 
 import com.zwj.Words;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
-
 /** 
 * Words Tester. 
 * 
@@ -79,5 +81,9 @@ public void testIsNotContainChinese_2() throws Exception {
         String str = "dasdad**&%d";
         Assert.assertTrue(Words.isNotContainChinese(str));
 }
-
-} 
+@Test(expected = IOException.class)
+public void testIndexOutOfBoundsException() throws IOException {
+    String path = "src\\main\\resources\\example\\no.txt";
+    List<String> textList = FileUtils.readLines(new File(path), "UTF-8");
+}
+}

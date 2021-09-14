@@ -1,6 +1,0 @@
-total: 5
-Line1: <妮好啊> 尼好阿
-Line2: <妮好啊> 你女子口阿
-Line4: <妮好啊> nihao口阿
-Line5: <妮好啊> 你H口阿
-Line6: <妮好啊> niHAOA
