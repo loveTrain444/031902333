@@ -1,44 +1,10 @@
 package com.zwj;
 import net.sourceforge.pinyin4j.PinyinHelper;
-import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
-import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
-import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
-import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
 import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
-import org.apache.commons.io.FileUtils;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 //使用AC自动机算法
-public class AcUtils {
-    public static String illegalString = "0123456789[\"`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+| {}【】‘；：”“’。，、？_]";
-    public static HanyuPinyinOutputFormat format= new HanyuPinyinOutputFormat();
-    //查找原词的字典
-    public static Map<String,String> dictionaryOfKeyword = new HashMap<>();
-    //查找部首拆分的字典
-    public static Map<Character,String> dictionaryOfBreak = new HashMap<>();
-    static {
-        format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
-        format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
-        format.setVCharType(HanyuPinyinVCharType.WITH_V);
-        try {
-            //读取文件里的拆分词库
-            List<String> breakList = FileUtils.readLines(new File("D:\\java_code\\031902333\\031902333\\src\\main\\resources\\拆分词库.txt"), "UTF-8");
-            for(String str:breakList){
-                char word = str.charAt(3);
-                int i=8;
-                while(str.charAt(i)!='\"'){
-                    i++;
-                }
-                String breakUP = str.substring(8,i);
-                dictionaryOfBreak.put(word,breakUP);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static class AcNode {
+public class TireTree {
+    private static class AcNode {
         String originKey;
         //孩子节点用HashMap存储，能够在O(1)的时间内查找到，效率高
         Map<String,AcNode> children=new HashMap<>();
@@ -46,19 +12,15 @@ public class AcUtils {
         //设置敏感词长度变量，如果不为零说明该节点为敏感词的结束，可以根据其值往前找敏感词的开始节点
         int wordLength;
     }
-    //获取根节点
-    public static AcNode getRoot(){
-        return new AcNode();
-    }
-    //判断字符串内是否含有中文，原理是中文占俩个字节，英文和其他字符占一个
-    private static boolean isNotContainChinese(String p) {
-        byte[] bytes = p.getBytes();
-        int i = bytes.length;//i为字节长度
-        int j = p.length();//j为字符长度
-        return i == j;
+
+    private final AcNode root;
+
+    public TireTree(List<String> list) {
+        root = new AcNode();
+        creatKeyWords(list);
     }
     //插入节点
-    public static void insert(AcNode root,Map.Entry<String,String> entry){
+    private   void insert(Map.Entry<String,String> entry){
         String ori = entry.getValue();
         String s = entry.getKey();
         AcNode cur=root;
@@ -90,72 +52,24 @@ public class AcUtils {
         cur.wordLength = len;//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
         cur.originKey = ori;
     }
-    public static void creatKeyWords(AcNode root, List<String> list){
-        for(String keyWord:list){
-            String [][] matrix ;
-            matrix = new String[keyWord.length()][];
-            //获取敏感词的扩展矩阵
-                for(int i=0;i<keyWord.length();i++){
-                    try {
-                        String key = String.valueOf(keyWord.charAt(i));
-                        String[] Spelling ;
-                        Spelling = PinyinHelper.toHanyuPinyinStringArray(keyWord.charAt(i),format);
-                        //Spelling返回null代表该敏感词字符是不是汉字，则有一个分支；是汉字有五个分支
-                        //比如功有五种情况：功，gong.{gong},g,工力
-                        if(Spelling!=null){
-                            matrix[i] = new String[5];
-                            matrix[i][0] = key;
-                            matrix[i][1] = Spelling[0];
-                            matrix[i][2] = "{"+Spelling[0]+"}";
-                            matrix[i][3] = String.valueOf(Spelling[0].charAt(0));
-                            matrix[i][4] = dictionaryOfBreak.get(keyWord.charAt(i));
-
-                        }else {
-                            matrix[i] = new String[2];
-                            matrix[i][0] = key;
-                            matrix[i][1] = key;
-                        }
-                    } catch (BadHanyuPinyinOutputFormatCombination badHanyuPinyinOutputFormatCombination) {
-                        badHanyuPinyinOutputFormatCombination.printStackTrace();
-                    }
-
-                }
-            /* 根据分支组合出所有情况 */
-            List<String> result = new ArrayList<>();
-            List<String> com = com(0, keyWord.length(), matrix, "", result);
+    private   void creatKeyWords( List<String> list){
+        //创建敏感词字典
+        HashMap<String, String> dictionaryOfKeyword = Words.createDictionaryOfKeyword(list);
+        //根据敏感词字典将敏感词库建成树
+        for(Map.Entry<String,String> entry: dictionaryOfKeyword.entrySet()){
+            insert(entry);
         }
-        //将敏感词库建成树
-        for(Map.Entry<String,String> entry:dictionaryOfKeyword.entrySet()){
-            insert(root,entry);
-        }
-        buildFailPath(root);
+        buildFailPath();
     }
-
-    private static List<String> com(int step,int len,String[][] matrix,String str,List<String> result){
-
-        if(step == len){
-            StringBuilder keyword = new StringBuilder();
-            for(int i=0;i<len;i++){
-                keyword.append(matrix[i][0]);
-            }
-            dictionaryOfKeyword.put(str, keyword.toString());
-            result.add(str);
-        }
-          else {
-              for (int k=1;k<matrix[step].length;k++){
-                  com(step+1,len,matrix,str+matrix[step][k],result);
-              }
-        }
-        return result;
-    }
-    private static void buildFailPath(AcNode root){
+    //建立fail指针
+    private  void buildFailPath(){
         //第一层的fail指针指向root,并且让第一层的节点入队，方便BFS
         try{
         Queue<AcNode> queue = new LinkedList<>();
         Map<String,AcNode> children = root.children;
         for (Map.Entry<String, AcNode> next : children.entrySet()) {
             String[] spelling;
-            spelling = PinyinHelper.toHanyuPinyinStringArray(next.getKey().charAt(0), format);
+            spelling = PinyinHelper.toHanyuPinyinStringArray(next.getKey().charAt(0), Words.format);
             queue.offer(next.getValue());
             if(spelling==null){
                 next.getValue().failNode = root;
@@ -171,7 +85,7 @@ public class AcUtils {
             for (Map.Entry<String, AcNode> next : children.entrySet()) {
                 AcNode y = next.getValue();  //得到当前某个孩子节点
                 AcNode failOfParent = x.failNode;  //得到孩子节点的父节点的fail节点
-                String[] spelling  = PinyinHelper.toHanyuPinyinStringArray(next.getKey().charAt(0), format);
+                String[] spelling  = PinyinHelper.toHanyuPinyinStringArray(next.getKey().charAt(0), Words.format);
                 //如果 failOfParent节点没有与 当前节点父节点具有相同的转移路径，
                 // 则继续获取 failOfParent 节点的失败指针指向的节点，将其赋值给 failOfParent
                 while (failOfParent != null && (!failOfParent.children.containsKey(next.getKey()))) {
@@ -204,11 +118,7 @@ public class AcUtils {
         }
     }
 
-    private static boolean isIllegal(char c){
-       String str = illegalString;
-        return str.contains(String.valueOf(c));
-    }
-    public static ArrayList<String> query(AcNode root, String s, int line){
+    private   ArrayList<String> query(String s, int line){
         ArrayList<String> resultSet = new ArrayList<>();
         AcNode cur = root;
         int start=-1;
@@ -218,12 +128,12 @@ public class AcUtils {
         for (int i = 0; i < s.length(); i++) {
             AcNode tamp = cur;
             //如果是非法字符直接跳过
-            if (isIllegal(s.charAt(i))){
+            if (Words.isIllegal(s.charAt(i))){
                 continue;
             }
             try {
                 str = String.valueOf(s.charAt(i)).toLowerCase(Locale.ROOT);
-                String[] spelling = PinyinHelper.toHanyuPinyinStringArray(str.charAt(0), format);
+                String[] spelling = PinyinHelper.toHanyuPinyinStringArray(str.charAt(0), Words.format);
                 if(isRemake) {
                 str = spelling[0];
                  }
@@ -239,11 +149,12 @@ public class AcUtils {
                  }
                 //如果temp的failOfParent为空，代表cur为root节点，没有在树中找到符合的敏感字，故跳出循环，检索下个字符
                 else{
+                    //如果重查还查不到则跳出循环
                     if (isRemake){
                         isRemake = false;
                         continue;
                      }
-                        else if (spelling!=null){
+                        else if (spelling!=null){//如果是汉字且查不到，则说明其不是部首，启动回溯，查其谐音
                          isRemake=true;
                          //回溯
                          cur=tamp;
@@ -268,15 +179,14 @@ public class AcUtils {
         }
         return resultSet;
     }
-
     //利用节点存储的字符长度信息，打印输出敏感词及其在搜索串内的坐标
-    private static int handleMatchWords(AcNode node, String text, int currentPos, int line, ArrayList<String> resultSet) {
+    private  int handleMatchWords(AcNode node, String text, int currentPos, int line, ArrayList<String> resultSet) {
             int startIndex;
             StringBuilder ans = new StringBuilder();
             int pos = currentPos;
             int cnt = node.wordLength;
             while(cnt>0){
-                if(!isIllegal(text.charAt(pos))){
+                if(!Words.isIllegal(text.charAt(pos))){
                     ans.append(text.charAt(pos));
                     cnt--;
                 }
@@ -290,5 +200,16 @@ public class AcUtils {
             resultSet.add("Line"+line+": "+"<"+node.originKey+"> " +ans);
             return startIndex;
       }
-    }
+      public ArrayList<String> getResultList(List<String> textList){
+        int line = 0;
+        ArrayList<String> resultList = new ArrayList<>();
+        resultList.add("");
+          for(String str :textList){
+              line++;
+              resultList.addAll(query(str, line));
+          }
+          resultList.set(0,"total: "+(resultList.size()-1));
+        return resultList;
+      }
+}
 
