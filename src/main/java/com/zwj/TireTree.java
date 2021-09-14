@@ -14,10 +14,9 @@ public class TireTree {
     }
 
     private final AcNode root;
-
     public TireTree(List<String> list) {
         root = new AcNode();
-        creatKeyWords(list);
+        createTree(list);
     }
     //插入节点
     private   void insert(Map.Entry<String,String> entry){
@@ -41,6 +40,7 @@ public class TireTree {
             }
             if (!cur.children.containsKey(sub)){ //如果不包含这个字符就创建孩子节点
                 cur.children.put(sub, new AcNode());
+                //在孩子节点里存放原词，便于最后的时候查阅
                 if( cur.children.get(sub).originKey==null||cur.children.get(sub).originKey.length() > ori.length()){
                     cur.children.get(sub).originKey = ori;
                 }
@@ -52,7 +52,7 @@ public class TireTree {
         cur.wordLength = len;//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
         cur.originKey = ori;
     }
-    private   void creatKeyWords( List<String> list){
+    private   void createTree( List<String> list){
         //创建敏感词字典
         HashMap<String, String> dictionaryOfKeyword = Words.createDictionaryOfKeyword(list);
         //根据敏感词字典将敏感词库建成树
@@ -106,8 +106,8 @@ public class TireTree {
                         y.failNode = root;
                     }else y.failNode = failOfParent.children.get(next.getKey());
                 }
-                 // 如果当前节点的fail节点有保存字符串的长度信息，则把信息存储合并到当前节点
-                  if (y.failNode.wordLength!=0){
+                 // 如果当前节点的fail节点有保存字符串的长度比当前节点长，则把信息存储到当前节点
+                  if (y.failNode.wordLength>y.wordLength){
                     y.wordLength = y.failNode.wordLength;
                 }
                 queue.offer(y);//把当前孩子节点入队
@@ -126,13 +126,13 @@ public class TireTree {
         //待检测字段，可能是字符也可能是拼音
         String str;
         for (int i = 0; i < s.length(); i++) {
-            AcNode tamp = cur;
             //如果是非法字符直接跳过
             if (Words.isIllegal(s.charAt(i))){
                 continue;
             }
+            AcNode tamp = cur;
+            str = String.valueOf(s.charAt(i)).toLowerCase(Locale.ROOT);
             try {
-                str = String.valueOf(s.charAt(i)).toLowerCase(Locale.ROOT);
                 String[] spelling = PinyinHelper.toHanyuPinyinStringArray(str.charAt(0), Words.format);
                 if(isRemake) {
                 str = spelling[0];
@@ -153,22 +153,22 @@ public class TireTree {
                     if (isRemake){
                         isRemake = false;
                         continue;
-                     }
+                    }
                         else if (spelling!=null){//如果是汉字且查不到，则说明其不是部首，启动回溯，查其谐音
                          isRemake=true;
                          //回溯
                          cur=tamp;
                          i--;
                          continue;
-                     }
-                         isRemake = false;
-                         continue;
+                        }//其余情况没查到直接跳出循环
+                     isRemake = false;
+                     continue;
                 }
                 //如果检索到当前节点的长度信息存在，则代表搜索到了敏感词，存入结果集
                  if (cur.wordLength!=0){
                     int startIndex=handleMatchWords(cur,s,i,line,resultSet);
                     //如果两个结果开始索引一样，取后来的结果
-                    if(startIndex==start){
+                    if(startIndex==start&&startIndex!=-1){
                         resultSet.remove(resultSet.size()-2);
                     }
                      start=startIndex;
@@ -185,6 +185,7 @@ public class TireTree {
             StringBuilder ans = new StringBuilder();
             int pos = currentPos;
             int cnt = node.wordLength;
+            //从当前坐标开始往回找敏感词
             while(cnt>0){
                 if(!Words.isIllegal(text.charAt(pos))){
                     ans.append(text.charAt(pos));
@@ -197,6 +198,14 @@ public class TireTree {
             }
             startIndex=pos+1;
             ans.reverse();
+            //如果c查询结果是中文且含有数字，则查询失败
+            if(!Words.isNotContainChinese(node.originKey)){
+                for(int i=0;i<ans.length();i++){
+                    if(ans.charAt(i)>'0'&&ans.charAt(i)<'9'){
+                        return -1;
+                    }
+                }
+            }
             resultSet.add("Line"+line+": "+"<"+node.originKey+"> " +ans);
             return startIndex;
       }

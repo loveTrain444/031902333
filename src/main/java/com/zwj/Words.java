@@ -26,7 +26,7 @@ public class Words{
         format.setVCharType(HanyuPinyinVCharType.WITH_V);
         try {
             //读取文件里的拆分词库
-            List<String> breakList = FileUtils.readLines(new File("D:\\java_code\\031902333\\031902333\\src\\main\\resources\\拆分词库.txt"), "UTF-8");
+            List<String> breakList = FileUtils.readLines(new File("src\\main\\resources\\拆分词库.txt"), "UTF-8");
             for(String str:breakList){
                 char word = str.charAt(3);
                 int i=8;
