@@ -107,7 +107,7 @@ public class TireTree {
                     }else y.failNode = failOfParent.children.get(next.getKey());
                 }
                  // 如果当前节点的fail节点有保存字符串的长度比当前节点长，则把信息存储到当前节点
-                  if (y.failNode.wordLength>y.wordLength){
+                if (y.failNode.wordLength>y.wordLength){
                     y.wordLength = y.failNode.wordLength;
                 }
                 queue.offer(y);//把当前孩子节点入队
@@ -134,9 +134,10 @@ public class TireTree {
             str = String.valueOf(s.charAt(i)).toLowerCase(Locale.ROOT);
             try {
                 String[] spelling = PinyinHelper.toHanyuPinyinStringArray(str.charAt(0), Words.format);
-                if(isRemake) {
-                str = spelling[0];
-                 }
+                    if(isRemake) {
+                        str = spelling[0];
+                    }
+
                 //如果这个字符在当前节点的孩子里面没有或者当前节点的fail指针不为空，就有可能通过fail指针找到这个字符
                 //所以就一直向上更换temp节点
                 while(cur.children.get(str)==null&&cur.failNode!=null){
