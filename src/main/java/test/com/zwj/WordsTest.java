@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +20,7 @@ import java.util.List;
 public class WordsTest { 
 
 @Test
-public void testIsIllegal() throws Exception {
+public void testIsIllegal(){
     String str = "*&（（）32sad1adw%打的d￥是擦谁先手#大@阿瓦&932+_+=~`";
     String excepted = "*&（（）321%￥#@&932+_+=~`";
     StringBuilder ans = new StringBuilder();
@@ -39,7 +38,7 @@ public void testIsIllegal() throws Exception {
 * 
 */ 
 @Test
-public void testCreateDictionaryOfKeyword() throws Exception {
+public void testCreateDictionaryOfKeyword() {
     List<String> keyWords = Arrays.asList(
             "你好",
             "hello"
@@ -72,18 +71,18 @@ public void testCreateDictionaryOfKeyword() throws Exception {
 * 
 */ 
 @Test
-public void testIsNotContainChinese_1() throws Exception {
+public void testIsNotContainChinese_1()  {
     String str = "das中dad文d";
     Assert.assertFalse(Words.isNotContainChinese(str));
 }
 @Test
-public void testIsNotContainChinese_2() throws Exception {
+public void testIsNotContainChinese_2()  {
         String str = "dasdad**&%d";
         Assert.assertTrue(Words.isNotContainChinese(str));
 }
 @Test(expected = IOException.class)
 public void testIndexOutOfBoundsException() throws IOException {
     String path = "src\\main\\resources\\example\\no.txt";
-    List<String> textList = FileUtils.readLines(new File(path), "UTF-8");
+    FileUtils.readLines(new File(path), "UTF-8");
 }
 }

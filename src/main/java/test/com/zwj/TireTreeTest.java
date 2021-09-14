@@ -21,7 +21,7 @@ public class TireTreeTest {
 * 
 */ 
 @Test
-public void testGetResultList() throws Exception {
+public void testGetResultList() {
         ArrayList<String> actualResultList;
         //文本
         List<String> textList = Arrays.asList(
