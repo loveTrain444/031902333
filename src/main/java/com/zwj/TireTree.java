@@ -41,6 +41,7 @@ public class TireTree {
             if (!cur.children.containsKey(sub)){ //如果不包含这个字符就创建孩子节点
                 cur.children.put(sub, new AcNode());
                 //在孩子节点里存放原词，便于最后的时候查阅
+                //增加原词信息时保留最长的信息
                 if( cur.children.get(sub).originKey==null||cur.children.get(sub).originKey.length() > ori.length()){
                     cur.children.get(sub).originKey = ori;
                 }
@@ -50,7 +51,7 @@ public class TireTree {
             len++;
         }
         cur.wordLength = len;//一个字符串遍历完了后，将其长度保存到最后一个孩子节点信息中
-        cur.originKey = ori;
+        cur.originKey = ori;//将原词信息保存到最后一个孩子节点信息中
     }
     private   void createTree( List<String> list){
         //创建敏感词字典
@@ -63,7 +64,7 @@ public class TireTree {
     }
     //建立fail指针
     private  void buildFailPath(){
-        //第一层的fail指针指向root,并且让第一层的节点入队，方便BFS
+        //指定第一层的fail指针,并且让第一层的节点入队，方便BFS
         try{
         Queue<AcNode> queue = new LinkedList<>();
         Map<String,AcNode> children = root.children;
@@ -72,9 +73,10 @@ public class TireTree {
             spelling = PinyinHelper.toHanyuPinyinStringArray(next.getKey().charAt(0), Words.format);
             queue.offer(next.getValue());
             if(spelling==null){
+                //是英文的话他的fail就是根
                 next.getValue().failNode = root;
                     }
-                else {
+                else {//是中文就查询它的兄弟中是否有它的拼音，有fail就指向它；没有就指向根
                 next.getValue().failNode = root.children.getOrDefault(spelling[0], root);
              }
         }
@@ -95,6 +97,7 @@ public class TireTree {
                 //如果是，汉字判断其兄弟节点有无与当前节点相等的值，若有则将当前节点的fail连道该兄弟节点上
                 if(spelling!=null){
                     if(x.children.containsKey(spelling[0])){
+                        //是中文就查询它的兄弟中是否有它的拼音，有fail就指向它
                         y.failNode = x.children.get(spelling[0]);
                         flag=true;
                     }
@@ -106,7 +109,7 @@ public class TireTree {
                         y.failNode = root;
                     }else y.failNode = failOfParent.children.get(next.getKey());
                 }
-                 // 如果当前节点的fail节点有保存字符串的长度比当前节点长，则把信息存储到当前节点
+                 // 如果当前节点的fail节点的保存字符串的长度比当前节点长，则把信息存储到当前节点
                 if (y.failNode.wordLength>y.wordLength){
                     y.wordLength = y.failNode.wordLength;
                 }
@@ -130,11 +133,12 @@ public class TireTree {
             if (Words.isIllegal(s.charAt(i))){
                 continue;
             }
-            AcNode tamp = cur;
+            AcNode tamp = cur;//保存回溯时需要的信息
             str = String.valueOf(s.charAt(i)).toLowerCase(Locale.ROOT);
             try {
                 String[] spelling = PinyinHelper.toHanyuPinyinStringArray(str.charAt(0), Words.format);
                     if(isRemake) {
+                        //如果本次查询是重查，则查询其拼音
                         str = spelling[0];
                     }
 
@@ -210,6 +214,7 @@ public class TireTree {
             resultSet.add("Line"+line+": "+"<"+node.originKey+"> " +ans);
             return startIndex;
       }
+      //供main使用的获取结果集函数，封装了对query的调用
       public ArrayList<String> getResultList(List<String> textList){
         int line = 0;
         ArrayList<String> resultList = new ArrayList<>();

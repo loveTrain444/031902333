@@ -6,9 +6,6 @@ import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
 import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
-import org.apache.commons.io.FileUtils;
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +88,7 @@ public class Words{
         }
         return dictionaryOfKeyword;
     }
+    //判断字符串是否含中文
     public static boolean isNotContainChinese(String p) {
         byte[] bytes = p.getBytes();
         int i = bytes.length;//i为字节长度
