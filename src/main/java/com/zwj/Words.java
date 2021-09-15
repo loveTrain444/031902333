@@ -23,9 +23,8 @@ public class Words{
         format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
         format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
         format.setVCharType(HanyuPinyinVCharType.WITH_V);
-        try {
             //读取文件里的拆分词库
-            List<String> breakList = FileUtils.readLines(new File("src\\main\\resources\\拆分词库.txt"), "UTF-8");
+            List<String> breakList = new Recource().getResource();
             for(String str:breakList){
                 char word = str.charAt(3);
                 int i=8;
@@ -35,9 +34,6 @@ public class Words{
                 String breakUP = str.substring(8,i);
                 dictionaryOfBreak.put(word,breakUP);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
     //判断是否是非法字符
    public static boolean isIllegal(char c){
