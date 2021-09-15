@@ -16,9 +16,7 @@ public class Main {
             List<String> keyWordsList = FileUtils.readLines(new File(words), "UTF-8");
             TireTree tree = new TireTree(keyWordsList);
             resultList = tree.getResultList(textList);
-            for (String re:resultList){
-                FileUtils.writeStringToFile(new File(ans), re+'\n', "UTF-8",true);
-            }
+            FileUtils.writeLines(new File(ans),"UTF-8",resultList,true);
         } catch (IOException e) {
             e.printStackTrace();
         }
