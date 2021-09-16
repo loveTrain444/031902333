@@ -21,7 +21,7 @@ public class Words{
         format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
         format.setVCharType(HanyuPinyinVCharType.WITH_V);
             //读取文件里的拆分词库
-            List<String> breakList = new Recource().getResource();
+            List<String> breakList = new Recourse().getResource();
             for(String str:breakList){
                 char word = str.charAt(3);
                 int i=8;
